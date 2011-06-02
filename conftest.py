@@ -1,5 +1,5 @@
-import pytest
-import py
+import time
+import base64
 from selenium import selenium
 
 
@@ -17,6 +17,7 @@ def pytest_runtest_setup(item):
 
         TestSetup.selenium.start()
         TestSetup.selenium.set_timeout(TestSetup.timeout)
+        TestSetup.selenium.set_context(item.keywords.keys()[0])
     else:
         TestSetup.skip_selenium = True
 
@@ -25,6 +26,15 @@ def pytest_runtest_teardown(item):
     if not TestSetup.skip_selenium:
         TestSetup.selenium.stop()
 
+def pytest_runtest_makereport(item, call):
+    if call.excinfo is not None:
+        filename = "%s_%s" % (item.keywords.keys()[0], str(time.time()).split('.')[0])
+        f = open("%s.png" % filename, 'wb')
+        f.write(base64.decodestring(TestSetup.selenium.capture_entire_page_screenshot_to_string('')))
+        f.close()
+        f = open("%s.html" % filename, 'wb')
+        f.write(TestSetup.selenium.get_html_source().encode('utf-8'))
+        f.close()
 
 def pytest_funcarg__testsetup(request):
     return TestSetup(request)
